@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Gloxy Inventory</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bl:#1A3C5E;--bl2:#2E6DA4;--blu:#D6E4F0;
+  --gr:#217346;--grl:#D5EDDA;
+  --rd:#C0392B;--rdl:#FADBD8;
+  --or:#E87722;--orl:#FFF0E0;
+  --yw:#FFF9C4;--gy:#F5F5F5;--gy2:#E8E8E8;
+  --tx:#222;--tx2:#666;--bd:#DDD;--wh:#FFF;
+  --r:12px;--rs:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#EEF2F7;color:var(--tx);max-width:430px;margin:0 auto;min-height:100vh}
+.app{display:flex;flex-direction:column;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--bl);padding:12px 14px 10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.tb-row{display:flex;align-items:center;justify-content:space-between}
+.tb-logo{font-size:16px;font-weight:800;color:#fff}
+.tb-sub{font-size:10px;color:rgba(255,255,255,.55);margin-top:1px}
+.sync-btn{background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:7px;padding:5px 11px;font-size:11px;color:#fff;cursor:pointer;font-weight:600}
+.sync-btn:active{opacity:.8}
+
+/* SCREENS */
+.screens{flex:1;overflow:hidden}
+.screen{display:none;height:calc(100vh - 102px);overflow-y:auto;padding:10px 12px 80px}
+.screen.active{display:block}
+
+/* NAV */
+.nav{display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1.5px solid var(--gy2);position:sticky;bottom:0;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,.07)}
+.ni{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px 9px;border:none;background:transparent;cursor:pointer;font-size:9px;font-weight:600;color:#aaa;position:relative}
+.ni svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7}
+.ni.active{color:var(--bl)}
+.ni.active svg{stroke:var(--or)}
+
+/* CARD */
+.card{background:#fff;border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,.06)}
+.sl{font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.7px;margin:8px 0 5px}
+
+/* FORM */
+.fr{margin-bottom:11px}
+.fl{font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:4px;display:block}
+.fi{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--rs);font-size:14px;color:var(--tx);background:#fff;font-family:inherit}
+.fi:focus{outline:none;border-color:var(--bl)}
+.fi.au{background:var(--yw);border-color:#E0D000;color:#666}
+.fi.err-input{border-color:var(--rd);background:#fff8f8}
+
+/* BUTTON */
+.btn{width:100%;padding:12px;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+.btn:active{opacity:.83}
+.btn-bl{background:var(--bl);color:#fff}
+.btn-gr{background:var(--gr);color:#fff}
+.btn-rd{background:var(--rd);color:#fff}
+.btn-or{background:var(--or);color:#fff}
+
+/* DROPDOWN */
+.sdd{position:relative}
+.sdf{width:100%;padding:10px 30px 10px 12px;border:1.5px solid var(--bd);border-radius:var(--rs);font-size:14px;color:#999;background:#fff;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+.sdf.ch{color:var(--tx)}
+.sdf.op{border-color:var(--bl);border-radius:var(--rs) var(--rs) 0 0}
+.sdf-arr{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:#aaa;pointer-events:none}
+.sdb{display:none;background:#fff;border:1.5px solid var(--bl);border-top:none;border-radius:0 0 var(--rs) var(--rs);z-index:60;position:relative}
+.sdb.op{display:block}
+.sds{width:100%;padding:8px 12px;border:none;border-bottom:1px solid var(--gy2);font-size:13px;outline:none;background:#f8f8f8;color:var(--tx)}
+.sdl{max-height:150px;overflow-y:auto}
+.sdi{padding:9px 12px;font-size:13px;color:var(--tx);cursor:pointer;border-bottom:1px solid #f5f5f5}
+.sdi:hover,.sdi:active{background:#f0f5ff}
+.sdi.ai{color:var(--or);font-weight:700;background:#fffaf5;border-bottom:none}
+.sdi .sk{font-size:10px;color:#aaa;margin-left:6px}
+.empty-dd{padding:10px 12px;font-size:12px;color:#aaa;text-align:center}
+
+/* STOCK OUT TABLE */
+.out-row{display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid #f5f5f5}
+.out-row:last-child{border-bottom:none}
+.out-sku{background:var(--blu);color:var(--bl);font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;flex-shrink:0}
+.out-nm{flex:1;font-size:12px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.out-qty{font-size:13px;font-weight:700;color:var(--tx);min-width:32px;text-align:right;flex-shrink:0}
+.del-btn{background:none;border:none;color:#ddd;font-size:14px;cursor:pointer;padding:2px;flex-shrink:0}
+.del-btn:hover{color:var(--rd)}
+.tot-bar{background:var(--bl);border-radius:8px;padding:9px 13px;margin-top:8px}
+.tot-row{display:flex;justify-content:space-between;align-items:center}
+.tot-lbl{font-size:10px;color:rgba(255,255,255,.7)}
+.tot-val{font-size:15px;font-weight:800;color:#fff}
+
+/* SEARCH RESULT */
+.res-card{background:#fff;border-radius:var(--r);padding:15px;margin-bottom:10px;border:2px solid var(--bl)}
+.res-sku{font-size:11px;font-weight:700;color:var(--bl);margin-bottom:4px}
+.res-name{font-size:17px;font-weight:800;color:var(--tx);margin-bottom:12px}
+.res-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.res-icon{font-size:18px;width:26px;flex-shrink:0}
+.res-label{font-size:10px;color:var(--tx2);font-weight:600;margin-bottom:3px}
+.res-val{font-size:15px;font-weight:700;color:var(--tx)}
+.loc-item-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f5f5}
+.loc-item-row:last-child{border-bottom:none}
+.loc-zone{font-size:13px;font-weight:600;color:var(--bl)}
+.loc-qty{font-size:13px;font-weight:700;color:var(--tx)}
+.stock-ok{background:var(--grl);color:var(--gr);font-size:10px;font-weight:700;border-radius:10px;padding:2px 9px}
+.stock-low{background:#FFF3CD;color:#856404;font-size:10px;font-weight:700;border-radius:10px;padding:2px 9px}
+.stock-out{background:var(--rdl);color:var(--rd);font-size:10px;font-weight:700;border-radius:10px;padding:2px 9px}
+
+/* DASHBOARD KPI */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.kpi{background:#fff;border-radius:var(--rs);padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.kpi.full{grid-column:1/-1}
+.kl{font-size:10px;color:var(--tx2);margin-bottom:4px;font-weight:600}
+.kv{font-size:28px;font-weight:800;line-height:1}
+.ksub{font-size:10px;color:var(--tx2);margin-top:3px}
+
+/* LOW STOCK LIST */
+.low-item{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f5f5f5}
+.low-item:last-child{border-bottom:none}
+.low-info{flex:1}
+.low-sku{font-size:10px;color:var(--bl);font-weight:700}
+.low-name{font-size:12px;font-weight:600;color:var(--tx);margin-top:1px}
+.low-loc{font-size:10px;color:var(--tx2);margin-top:1px}
+.low-stocks{text-align:right}
+.low-cur{font-size:15px;font-weight:800;color:var(--rd)}
+.low-re{font-size:10px;color:var(--tx2);margin-top:1px}
+
+/* MODAL */
+.mbg{display:none;background:rgba(0,0,0,.5);position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;align-items:flex-end;justify-content:center;max-width:430px;margin:0 auto}
+.mbg.op{display:flex}
+.modal{background:#fff;border-radius:16px 16px 0 0;padding:20px;width:100%;max-height:80vh;overflow-y:auto}
+.mh{font-size:14px;font-weight:700;color:var(--bl);margin-bottom:15px;display:flex;align-items:center;justify-content:space-between}
+.mc{background:none;border:none;font-size:20px;color:#aaa;cursor:pointer;padding:0}
+.mr{margin-bottom:11px}
+.ml{font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:4px;display:block}
+.mi{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--rs);font-size:14px;color:var(--tx);font-family:inherit}
+.mi:focus{outline:none;border-color:var(--bl)}
+.mbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}
+.mbtn{padding:11px;border:none;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer}
+.mbtn-c{background:var(--gy);color:var(--tx2)}
+.mbtn-s{background:var(--bl);color:#fff}
+
+/* TOAST */
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--gr);color:#fff;padding:11px 20px;border-radius:22px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.2);max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--rd)}
+.toast.warn{background:var(--or)}
+
+/* LOADER */
+.ld{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:20px 10px;color:#bbb;font-size:13px}
+
+/* SBAR */
+.sbar{display:flex;align-items:center;gap:8px;background:#fff;border-radius:var(--rs);padding:9px 13px;border:1.5px solid var(--bd);margin-bottom:10px}
+.sbar input{border:none;outline:none;font-size:15px;flex:1;background:transparent;color:var(--tx)}
+.sbar svg{width:17px;height:17px;stroke:#aaa;fill:none;stroke-width:2;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-row">
+    <div><div class="tb-logo">&#127981; Gloxy Inventory</div><div class="tb-sub">Warehouse Management</div></div>
+    <button class="sync-btn" onclick="syncAll()">&#8635; Sync</button>
+  </div>
+</div>
+
+<!-- SCREENS -->
+<div class="screens">
+
+<!-- 1. STOCK IN -->
+<div id="sc-in" class="screen active">
+  <div class="sl">Stock IN Entry</div>
+  <div class="card">
+    <div class="fr">
+      <label class="fl">SKU Code</label>
+      <div class="sdd" id="in-sku-dd">
+        <button class="sdf" id="in-sku-f" onclick="tDD('in-sku')">-- SKU Select Karo --<span class="sdf-arr">&#9660;</span></button>
+        <div class="sdb" id="in-sku-b">
+          <input class="sds" id="in-sku-s" placeholder="Search SKU ya naam..." oninput="fInSKU(this.value)" autocomplete="off">
+          <div class="sdl" id="in-sku-l"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fr">
+      <label class="fl">Product Name <span style="font-size:9px;background:var(--yw);color:#856404;border-radius:3px;padding:1px 5px;font-weight:700">AUTO</span></label>
+      <input class="fi au" id="in-pn" readonly placeholder="SKU select karo">
+    </div>
+    <div class="fr">
+      <label class="fl">Qty Received</label>
+      <input class="fi" type="number" id="in-qty" placeholder="e.g. 100" min="1">
+    </div>
+    <div class="fr">
+      <label class="fl">Location</label>
+      <div class="sdd" id="in-loc-dd">
+        <button class="sdf" id="in-loc-f" onclick="tDD('in-loc')">-- Location Select Karo --<span class="sdf-arr">&#9660;</span></button>
+        <div class="sdb" id="in-loc-b">
+          <input class="sds" id="in-loc-s" placeholder="Search location..." oninput="fLocDD(this.value)" autocomplete="off">
+          <div class="sdl" id="in-loc-l"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fr">
+      <label class="fl">Date</label>
+      <input class="fi" type="date" id="in-date">
+    </div>
+    <button class="btn btn-gr" id="in-save-btn" onclick="saveIN()">&#10003; Stock IN Save Karo</button>
+  </div>
+
+  <!-- New SKU Modal -->
+  <div class="mbg" id="new-sku-modal">
+    <div class="modal">
+      <div class="mh">&#43; Naya SKU Add Karo <button class="mc" onclick="cM('new-sku-modal')">&#10005;</button></div>
+      <div class="mr"><label class="ml">SKU Code</label><input class="mi" id="ns-sku" placeholder="e.g. BA260"></div>
+      <div class="mr"><label class="ml">Product Name</label><input class="mi" id="ns-name" placeholder="e.g. Bathroom Shelf 260mm"></div>
+      <div class="mr"><label class="ml">Reorder Level</label><input class="mi" type="number" id="ns-rl" placeholder="e.g. 50" value="50"></div>
+      <div class="mr"><label class="ml">Cost Price (optional)</label><input class="mi" type="number" id="ns-cp" placeholder="e.g. 450"></div>
+      <div class="mbtns">
+        <button class="mbtn mbtn-c" onclick="cM('new-sku-modal')">Cancel</button>
+        <button class="mbtn mbtn-s" onclick="saveNewSKU()">Save & Select</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Location Modal -->
+  <div class="mbg" id="new-loc-modal">
+    <div class="modal">
+      <div class="mh">&#43; Naya Location Add Karo <button class="mc" onclick="cM('new-loc-modal')">&#10005;</button></div>
+      <div class="mr"><label class="ml">Location Code</label><input class="mi" id="nl-code" placeholder="e.g. A1, B2, C3"></div>
+      <div class="mbtns">
+        <button class="mbtn mbtn-c" onclick="cM('new-loc-modal')">Cancel</button>
+        <button class="mbtn mbtn-s" onclick="saveNewLoc()">Save & Select</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. STOCK OUT -->
+<div id="sc-out" class="screen">
+  <div class="sl">Stock OUT Entry</div>
+  <div class="card">
+    <div class="fr">
+      <label class="fl">SKU Code</label>
+      <div class="sdd" id="out-sku-dd">
+        <button class="sdf" id="out-sku-f" onclick="tDD('out-sku')">-- SKU Select Karo --<span class="sdf-arr">&#9660;</span></button>
+        <div class="sdb" id="out-sku-b">
+          <input class="sds" id="out-sku-s" placeholder="Search SKU ya naam..." oninput="fOutSKU(this.value)" autocomplete="off">
+          <div class="sdl" id="out-sku-l"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fr">
+      <label class="fl">Product Name <span style="font-size:9px;background:var(--yw);color:#856404;border-radius:3px;padding:1px 5px;font-weight:700">AUTO</span></label>
+      <input class="fi au" id="out-pn" readonly placeholder="SKU select karo">
+    </div>
+    <div class="fr">
+      <label class="fl">Current Stock <span style="font-size:9px;background:var(--yw);color:#856404;border-radius:3px;padding:1px 5px;font-weight:700">AUTO</span></label>
+      <input class="fi au" id="out-cs" readonly placeholder="SKU select karo">
+    </div>
+    <div class="fr">
+      <label class="fl">Qty Dispatched</label>
+      <input class="fi" type="number" id="out-qty" placeholder="e.g. 20" min="1">
+    </div>
+    <div class="fr">
+      <label class="fl">Date</label>
+      <input class="fi" type="date" id="out-date">
+    </div>
+    <button class="btn btn-rd" onclick="addOutRow()">&#43; Table mein Add Karo</button>
+  </div>
+
+  <div class="sl">Aaj ka OUT Table</div>
+  <div class="card" style="padding:10px 13px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--rd)">Entries (<span id="out-cnt">0</span>)</div>
+      <button id="out-save-btn" onclick="saveOut()" style="padding:5px 13px;background:var(--gr);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Sheets mein Save</button>
+    </div>
+    <div id="out-entries"><div class="empty">Koi entry nahi</div></div>
+    <div id="out-total" style="display:none">
+      <div class="tot-bar">
+        <div class="tot-row"><div class="tot-lbl">Grand Total</div><div class="tot-val" id="out-grand">0 units</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. SEARCH STOCK -->
+<div id="sc-search" class="screen">
+  <div class="sl">Stock Search</div>
+  <div class="sbar">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="search-inp" placeholder="SKU type karo... e.g. BA260" oninput="doSearch(this.value)" autocomplete="off">
+  </div>
+  <div id="search-results"><div class="empty">SKU type karo - result dikhega</div></div>
+</div>
+
+<!-- 4. DASHBOARD -->
+<div id="sc-dash" class="screen">
+  <div class="sl">Live Dashboard</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kl">Total SKUs</div><div class="kv" style="color:var(--bl)" id="d-sku">--</div><div class="ksub">Active products</div></div>
+    <div class="kpi"><div class="kl">Total Stock</div><div class="kv" style="color:var(--gr)" id="d-stock">--</div><div class="ksub">Units in warehouse</div></div>
+    <div class="kpi full">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><div class="kl">Low Stock Alert</div><div class="kv" style="color:var(--rd)" id="d-low">--</div><div class="ksub">Stock &lt;= Reorder Level</div></div>
+        <div style="font-size:36px">&#128680;</div>
+      </div>
+    </div>
+  </div>
+  <div class="sl">Low Stock Products</div>
+  <div class="card" style="padding:8px 13px" id="low-stock-list"><div class="empty">Data load ho raha hai...</div></div>
+</div>
+
+</div><!-- screens end -->
+
+<!-- BOTTOM NAV -->
+<nav class="nav">
+  <button class="ni active" id="ni-in" onclick="goTo('in')">
+    <svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
+    Stock IN
+  </button>
+  <button class="ni" id="ni-out" onclick="goTo('out')">
+    <svg viewBox="0 0 24 24"><polyline points="16 17 12 13 8 17"/><line x1="12" y1="13" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
+    Stock OUT
+  </button>
+  <button class="ni" id="ni-search" onclick="goTo('search')">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Search
+  </button>
+  <button class="ni" id="ni-dash" onclick="goTo('dash')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </button>
+</nav>
+</div><!-- app -->
+
+<div class="toast" id="g-toast"></div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+var SURL = "https://script.google.com/macros/s/AKfycbyiW7WtGsASTu15mo8attii7Kt5ZnnYrvD6vEL9Nn82TkMugVop661vGXjZGSVsBaNL/exec";
+
+// ============================================================
+// DATA STORE
+// ============================================================
+var PRODS = [];    // {sku, name, reorderLevel}
+var LOCS  = [];    // location strings - loaded from Stock IN sheet
+var DASH  = [];    // dashboard data per SKU
+var OUT_ENTRIES = [];
+var selInSKU  = null;
+var selOutSKU = null;
+var selInLoc  = "";
+
+var TODAY = new Date();
+function fmtDate(d){return d.toISOString().split("T")[0];}
+
+// Set default dates
+document.getElementById("in-date").value  = fmtDate(TODAY);
+document.getElementById("out-date").value = fmtDate(TODAY);
+
+// ============================================================
+// API
+// ============================================================
+async function apiPost(data){
+  try{
+    await fetch(SURL, {
+      method: "POST",
+      mode: "no-cors",
+      redirect: "follow",
+      headers: {"Content-Type":"text/plain"},
+      body: JSON.stringify(data)
+    });
+    return {status:"ok"};
+  }catch(e){
+    console.log("apiPost error:",e);
+    return {status:"error"};
+  }
+}
+async function apiGet(type){
+  return new Promise(function(resolve){
+    // JSONP approach - works on mobile too
+    var cbName = "gcb_" + Date.now();
+    var script = document.createElement("script");
+    var done = false;
+    var timer = setTimeout(function(){
+      if(!done){
+        done = true;
+        delete window[cbName];
+        document.body.removeChild(script);
+        // Fallback to fetch
+        fetch(SURL + "?type=" + type)
+          .then(function(r){return r.json();})
+          .then(function(d){resolve(d);})
+          .catch(function(){resolve({status:"error",data:[]});});
+      }
+    }, 8000);
+    window[cbName] = function(data){
+      if(!done){
+        done = true;
+        clearTimeout(timer);
+        delete window[cbName];
+        try{document.body.removeChild(script);}catch(e){}
+        resolve(data);
+      }
+    };
+    script.src = SURL + "?type=" + type + "&callback=" + cbName;
+    script.onerror = function(){
+      if(!done){
+        done = true;
+        clearTimeout(timer);
+        delete window[cbName];
+        // Try plain fetch as fallback
+        fetch(SURL + "?type=" + type)
+          .then(function(r){return r.json();})
+          .then(function(d){resolve(d);})
+          .catch(function(){resolve({status:"error",data:[]});});
+      }
+    };
+    document.body.appendChild(script);
+  });
+}
+
+// ============================================================
+// SYNC
+// ============================================================
+async function syncAll(){
+  showToast("Sheets se sync ho raha hai...");
+  try{
+    var pr = await apiGet("products");
+    if(pr && pr.status==="ok" && pr.data && pr.data.length>0){
+      PRODS = pr.data.filter(function(p){
+        return p.sku && p.name && p.sku!=="SKU" && p.name!=="Product Name";
+      });
+    }
+  }catch(e){}
+  try{
+    var dash = await apiGet("dashboard");
+    if(dash && dash.status==="ok" && dash.data){
+      DASH = dash.data.filter(function(d){return d.sku && d.name;});
+      // Also sync locations from dashboard
+      DASH.forEach(function(d){
+        if(d.locations){
+          d.locations.forEach(function(l){if(!LOCS.includes(l))LOCS.push(l);});
+        }
+        if(d.location && !LOCS.includes(d.location)) LOCS.push(d.location);
+      });
+      updateDashboard(dash);
+    }
+  }catch(e){}
+  // Rebuild dropdowns
+  // Sync locations from Stock IN sheet
+  try{
+    var locs = await apiGet("locations");
+    if(locs && locs.status==="ok" && locs.data && locs.data.length>0){
+      locs.data.forEach(function(l){
+        if(l && l.trim() && !LOCS.includes(l.trim())) LOCS.push(l.trim());
+      });
+    }
+  }catch(e){}
+
+  buildInSKU(""); buildOutSKU(""); buildLocDD("");
+  if(PRODS.length > 0){
+    showToast("Sync complete! "+PRODS.length+" products, "+LOCS.length+" locations");
+  } else {
+    showToast("Products nahi aaye - Apps Script check karo","err");
+  }
+}
+
+// ============================================================
+// SCREEN NAVIGATION
+// ============================================================
+function goTo(id){
+  document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");});
+  document.querySelectorAll(".ni").forEach(function(b){b.classList.remove("active");});
+  document.getElementById("sc-"+id).classList.add("active");
+  document.getElementById("ni-"+id).classList.add("active");
+  cAllDD();
+}
+
+// ============================================================
+// DROPDOWN HELPERS
+// ============================================================
+function tDD(id){
+  var b = document.getElementById(id+"-b");
+  var f = document.getElementById(id+"-f");
+  var was = b.classList.contains("op");
+  cAllDD();
+  if(!was){
+    b.classList.add("op");
+    f.classList.add("op");
+    var s = document.getElementById(id+"-s");
+    if(s) setTimeout(function(){s.focus();},50);
+  }
+}
+function cAllDD(){
+  document.querySelectorAll(".sdb").forEach(function(b){b.classList.remove("op");});
+  document.querySelectorAll(".sdf").forEach(function(f){f.classList.remove("op");});
+}
+
+// ============================================================
+// STOCK IN - SKU DROPDOWN
+// ============================================================
+function buildInSKU(filter){
+  var list = document.getElementById("in-sku-l");
+  list.innerHTML = "";
+  var f = filter.toLowerCase();
+  var filtered = PRODS.filter(function(p){
+    return !f || p.sku.toLowerCase().includes(f) || p.name.toLowerCase().includes(f);
+  });
+  if(!filtered.length && !f){
+    list.innerHTML = '<div class="empty-dd">Koi product nahi - Sync karo</div>';
+  }
+  filtered.forEach(function(p){
+    var d = document.createElement("div");
+    d.className = "sdi";
+    d.innerHTML = "<strong>"+p.sku+"</strong><span class='sk'>"+p.name+"</span>";
+    d.onclick = function(){
+      selInSKU = p;
+      document.getElementById("in-sku-f").innerHTML = "<strong>"+p.sku+"</strong> - "+p.name+'<span class="sdf-arr">&#9660;</span>';
+      document.getElementById("in-sku-f").classList.add("ch");
+      document.getElementById("in-pn").value = p.name;
+      cAllDD();
+    };
+    list.appendChild(d);
+  });
+  // Add new SKU option
+  var add = document.createElement("div");
+  add.className = "sdi ai";
+  add.innerHTML = "&#43; Naya SKU Add Karo";
+  add.onclick = function(){cAllDD(); openNewSKU(filter);};
+  list.appendChild(add);
+}
+function fInSKU(val){buildInSKU(val);}
+function openNewSKU(prefill){
+  document.getElementById("ns-sku").value = (prefill||"").toUpperCase();
+  document.getElementById("ns-name").value = "";
+  document.getElementById("ns-rl").value = "50";
+  document.getElementById("ns-cp").value = "";
+  oM("new-sku-modal");
+}
+async function saveNewSKU(){
+  var sku  = document.getElementById("ns-sku").value.trim().toUpperCase();
+  var name = document.getElementById("ns-name").value.trim();
+  var rl   = parseInt(document.getElementById("ns-rl").value)||50;
+  var cp   = parseFloat(document.getElementById("ns-cp").value)||0;
+  if(!sku||!name){showToast("SKU aur Name dono bharo!","err");return;}
+  if(PRODS.find(function(p){return p.sku===sku;})){showToast("SKU pehle se hai!","warn");return;}
+  PRODS.push({sku:sku, name:name, reorderLevel:rl});
+  await apiPost({type:"product_add", sku:sku, name:name, reorderLevel:rl, costPrice:cp});
+  cM("new-sku-modal");
+  // Auto select
+  selInSKU = {sku:sku, name:name, reorderLevel:rl};
+  document.getElementById("in-sku-f").innerHTML = "<strong>"+sku+"</strong> - "+name+'<span class="sdf-arr">&#9660;</span>';
+  document.getElementById("in-sku-f").classList.add("ch");
+  document.getElementById("in-pn").value = name;
+  buildInSKU("");
+  showToast("Naya SKU add ho gaya aur select ho gaya!");
+}
+
+// ============================================================
+// STOCK IN - LOCATION DROPDOWN
+// ============================================================
+function buildLocDD(filter){
+  var list = document.getElementById("in-loc-l");
+  list.innerHTML = "";
+  var f = filter.toLowerCase();
+  var filtered = LOCS.filter(function(l){return !f || l.toLowerCase().includes(f);});
+  if(!filtered.length && !f && LOCS.length === 0){
+    var msg = document.createElement("div");
+    msg.className = "empty-dd";
+    msg.textContent = "Sync karo - Stock IN sheet se locations aayengi";
+    list.appendChild(msg);
+  }
+  filtered.forEach(function(l){
+    var d = document.createElement("div");
+    d.className = "sdi";
+    d.textContent = l;
+    d.onclick = function(){
+      selInLoc = l;
+      document.getElementById("in-loc-f").innerHTML = l+'<span class="sdf-arr">&#9660;</span>';
+      document.getElementById("in-loc-f").classList.add("ch");
+      cAllDD();
+    };
+    list.appendChild(d);
+  });
+  // Add new location
+  var add = document.createElement("div");
+  add.className = "sdi ai";
+  add.innerHTML = "&#43; Naya Location Add Karo";
+  add.onclick = function(){
+    cAllDD();
+    document.getElementById("nl-code").value = (filter||"").toUpperCase();
+    oM("new-loc-modal");
+  };
+  list.appendChild(add);
+}
+function fLocDD(val){buildLocDD(val);}
+function saveNewLoc(){
+  var code = document.getElementById("nl-code").value.trim().toUpperCase();
+  if(!code){showToast("Location code bharo!","err");return;}
+  if(LOCS.includes(code)){showToast("Location pehle se hai!","warn");return;}
+  LOCS.push(code);
+  selInLoc = code;
+  document.getElementById("in-loc-f").innerHTML = code+'<span class="sdf-arr">&#9660;</span>';
+  document.getElementById("in-loc-f").classList.add("ch");
+  cM("new-loc-modal");
+  buildLocDD("");
+  showToast("Location add ho gaya!");
+}
+
+// ============================================================
+// SAVE STOCK IN
+// ============================================================
+async function saveIN(){
+  if(!selInSKU){showToast("SKU select karo!","err");return;}
+  var qty = parseInt(document.getElementById("in-qty").value||0);
+  if(!qty||qty<1){showToast("Qty daalo!","err");return;}
+  if(!selInLoc){showToast("Location select karo!","err");return;}
+  var date = document.getElementById("in-date").value;
+  if(!date){showToast("Date daalo!","err");return;}
+
+  var btn = document.getElementById("in-save-btn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ld"></span>Saving...';
+
+  await apiPost({
+    type:"stock_in",
+    sku: selInSKU.sku,
+    qty: qty,
+    location: selInLoc,
+    date: date
+  });
+
+  // Update local dash
+  var d = DASH.find(function(x){return x.sku===selInSKU.sku;});
+  if(d){ d.currentStock = (d.currentStock||0) + qty; d.totalIN = (d.totalIN||0) + qty; }
+
+  showToast("Stock IN saved! "+selInSKU.sku+" - "+qty+" units @ "+selInLoc);
+
+  // Reset
+  selInSKU = null; selInLoc = "";
+  document.getElementById("in-sku-f").innerHTML = '-- SKU Select Karo --<span class="sdf-arr">&#9660;</span>';
+  document.getElementById("in-sku-f").classList.remove("ch");
+  document.getElementById("in-loc-f").innerHTML = '-- Location Select Karo --<span class="sdf-arr">&#9660;</span>';
+  document.getElementById("in-loc-f").classList.remove("ch");
+  document.getElementById("in-pn").value = "";
+  document.getElementById("in-qty").value = "";
+  document.getElementById("in-date").value = fmtDate(TODAY);
+
+  btn.disabled = false;
+  btn.innerHTML = "&#10003; Stock IN Save Karo";
+}
+
+// ============================================================
+// STOCK OUT - SKU DROPDOWN
+// ============================================================
+function buildOutSKU(filter){
+  var list = document.getElementById("out-sku-l");
+  list.innerHTML = "";
+  var f = filter.toLowerCase();
+  var filtered = PRODS.filter(function(p){
+    return !f || p.sku.toLowerCase().includes(f) || p.name.toLowerCase().includes(f);
+  });
+  if(!filtered.length){
+    list.innerHTML = '<div class="empty-dd">Koi product nahi</div>';
+    return;
+  }
+  filtered.forEach(function(p){
+    var d = DASH.find(function(x){return x.sku===p.sku;})||{};
+    var stock = d.currentStock||0;
+    var el = document.createElement("div");
+    el.className = "sdi";
+    el.innerHTML = "<strong>"+p.sku+"</strong><span class='sk'>"+p.name+"</span> <span style='margin-left:auto;font-size:10px;font-weight:700;color:"+(stock>0?"var(--gr)":"var(--rd)")+"'>"+stock+"u</span>";
+    el.onclick = function(){
+      selOutSKU = p;
+      document.getElementById("out-sku-f").innerHTML = "<strong>"+p.sku+"</strong> - "+p.name+'<span class="sdf-arr">&#9660;</span>';
+      document.getElementById("out-sku-f").classList.add("ch");
+      document.getElementById("out-pn").value = p.name;
+      document.getElementById("out-cs").value = stock + " units";
+      cAllDD();
+    };
+    list.appendChild(el);
+  });
+}
+function fOutSKU(val){buildOutSKU(val);}
+
+// ============================================================
+// STOCK OUT - ADD ROW + SAVE
+// ============================================================
+function addOutRow(){
+  if(!selOutSKU){showToast("SKU select karo!","err");return;}
+  var qty = parseInt(document.getElementById("out-qty").value||0);
+  if(!qty||qty<1){showToast("Qty daalo!","err");return;}
+
+  // Check stock
+  var d = DASH.find(function(x){return x.sku===selOutSKU.sku;})||{};
+  var avail = d.currentStock||0;
+  // Check already in table
+  var alreadyOut = OUT_ENTRIES.filter(function(e){return e.sku===selOutSKU.sku;}).reduce(function(a,e){return a+e.qty;},0);
+  if(qty > (avail - alreadyOut)){
+    showToast("Insufficient Stock! Available: "+(avail-alreadyOut)+" units","err");
+    return;
+  }
+
+  OUT_ENTRIES.push({sku:selOutSKU.sku, name:selOutSKU.name, qty:qty, date:document.getElementById("out-date").value});
+
+  // Reset selection
+  selOutSKU = null;
+  document.getElementById("out-sku-f").innerHTML = '-- SKU Select Karo --<span class="sdf-arr">&#9660;</span>';
+  document.getElementById("out-sku-f").classList.remove("ch");
+  document.getElementById("out-pn").value = "";
+  document.getElementById("out-cs").value = "";
+  document.getElementById("out-qty").value = "";
+  renderOutTable();
+  showToast("Entry add ho gayi!");
+}
+
+function renderOutTable(){
+  document.getElementById("out-cnt").textContent = OUT_ENTRIES.length;
+  var div = document.getElementById("out-entries");
+  if(!OUT_ENTRIES.length){
+    div.innerHTML = '<div class="empty">Koi entry nahi</div>';
+    document.getElementById("out-total").style.display = "none";
+    return;
+  }
+  div.innerHTML = OUT_ENTRIES.map(function(e,i){
+    return '<div class="out-row">'+
+      '<div class="out-sku">'+e.sku+'</div>'+
+      '<div class="out-nm">'+e.name+'</div>'+
+      '<div class="out-qty">'+e.qty+'u</div>'+
+      '<button class="del-btn" onclick="delOut('+i+')">&#10005;</button>'+
+      '</div>';
+  }).join("");
+  var g = OUT_ENTRIES.reduce(function(a,e){return a+e.qty;},0);
+  document.getElementById("out-grand").textContent = g+" units";
+  document.getElementById("out-total").style.display = "block";
+}
+
+function delOut(i){
+  OUT_ENTRIES.splice(i,1);
+  renderOutTable();
+}
+
+async function saveOut(){
+  if(!OUT_ENTRIES.length){showToast("Koi entry nahi!","err");return;}
+  var btn = document.getElementById("out-save-btn");
+  btn.disabled = true; btn.textContent = "Saving...";
+
+  await apiPost({
+    type:"stock_out",
+    date: document.getElementById("out-date").value,
+    entries: OUT_ENTRIES.map(function(e){return {sku:e.sku, qty:e.qty};})
+  });
+
+  // Update local stock
+  OUT_ENTRIES.forEach(function(e){
+    var d = DASH.find(function(x){return x.sku===e.sku;});
+    if(d) d.currentStock = Math.max(0,(d.currentStock||0)-e.qty);
+  });
+
+  var n = OUT_ENTRIES.length;
+  OUT_ENTRIES = [];
+  renderOutTable();
+  showToast(n+" entries save ho gayi Sheets mein!");
+  btn.disabled = false; btn.textContent = "Sheets mein Save";
+  updateDashUI();
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+function doSearch(val){
+  var v = val.trim().toUpperCase();
+  var res = document.getElementById("search-results");
+  if(!v){res.innerHTML='<div class="empty">SKU type karo - result dikhega</div>';return;}
+
+  var matches = DASH.filter(function(d){return d.sku.toUpperCase().includes(v)||d.name.toUpperCase().includes(v);});
+  if(!matches.length){
+    // Try from PRODS
+    var mp = PRODS.filter(function(p){return p.sku.toUpperCase().includes(v)||p.name.toUpperCase().includes(v);});
+    if(!mp.length){res.innerHTML='<div class="empty">Koi product nahi mila</div>';return;}
+    matches = mp.map(function(p){return {sku:p.sku,name:p.name,currentStock:0,stockAge:0,locations:{},status:"outofstock"};});
+  }
+
+  res.innerHTML = matches.map(function(d){
+    var sc = d.status==="ok"?"stock-ok":d.status==="warn"?"stock-low":"stock-out";
+    var sl = d.status==="ok"?"OK":d.status==="warn"?"Low Stock":"Urgent/Out";
+
+    // Location breakdown
+    var locHtml = "";
+    if(d.locationBreakdown && Object.keys(d.locationBreakdown).length>0){
+      locHtml = Object.entries(d.locationBreakdown).map(function(kv){
+        return '<div class="loc-item-row"><div class="loc-zone">'+kv[0]+'</div><div class="loc-qty">'+kv[1]+' units</div></div>';
+      }).join("");
+    } else if(d.location){
+      locHtml = '<div class="loc-item-row"><div class="loc-zone">'+d.location+'</div><div class="loc-qty">'+d.currentStock+' units</div></div>';
+    } else {
+      locHtml = '<div style="font-size:12px;color:#bbb">Location data nahi hai</div>';
+    }
+
+    return '<div class="res-card">'+
+      '<div class="res-sku">'+d.sku+'</div>'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'+
+        '<div class="res-name">'+d.name+'</div>'+
+        '<div class="'+sc+'">'+sl+'</div>'+
+      '</div>'+
+      '<div class="res-row"><div class="res-icon">&#128230;</div>'+
+        '<div><div class="res-label">Current Stock</div><div class="res-val" style="color:var(--bl);font-size:20px">'+d.currentStock+'</div></div>'+
+      '</div>'+
+      '<div class="res-row"><div class="res-icon">&#128205;</div>'+
+        '<div style="flex:1"><div class="res-label">Location</div>'+locHtml+'</div>'+
+      '</div>'+
+      '<div class="res-row"><div class="res-icon">&#128337;</div>'+
+        '<div><div class="res-label">Stock Age</div><div class="res-val">'+d.stockAge+' din</div></div>'+
+      '</div>'+
+      '</div>';
+  }).join("");
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function updateDashboard(dash){
+  if(!dash || !dash.data) return;
+  DASH = dash.data.filter(function(d){return d.sku&&d.name;});
+  updateDashUI();
+}
+
+function updateDashUI(){
+  var totalSKU = DASH.length;
+  var totalStock = DASH.reduce(function(a,d){return a+(d.currentStock||0);},0);
+  var lowItems = DASH.filter(function(d){return d.currentStock<=(d.reorderLevel||50);});
+
+  document.getElementById("d-sku").textContent   = totalSKU;
+  document.getElementById("d-stock").textContent = totalStock;
+  document.getElementById("d-low").textContent   = lowItems.length + " Products";
+
+  var list = document.getElementById("low-stock-list");
+  if(!lowItems.length){
+    list.innerHTML = '<div class="empty" style="color:var(--gr)">&#10003; Sab products ka stock theek hai!</div>';
+    return;
+  }
+  list.innerHTML = lowItems.map(function(d){
+    return '<div class="low-item">'+
+      '<div class="low-info">'+
+        '<div class="low-sku">'+d.sku+'</div>'+
+        '<div class="low-name">'+d.name+'</div>'+
+        '<div class="low-loc">'+( d.location||"")+'</div>'+
+      '</div>'+
+      '<div class="low-stocks">'+
+        '<div class="low-cur">'+d.currentStock+'</div>'+
+        '<div class="low-re">Reorder: '+(d.reorderLevel||50)+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function oM(id){document.getElementById(id).classList.add("op");}
+function cM(id){document.getElementById(id).classList.remove("op");}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, type){
+  var t = document.getElementById("g-toast");
+  t.textContent = msg;
+  t.className = "toast" + (type?" "+type:"");
+  t.classList.add("show");
+  clearTimeout(t._t);
+  t._t = setTimeout(function(){t.classList.remove("show");}, 3000);
+}
+
+// ============================================================
+// CLOSE DROPDOWNS ON OUTSIDE CLICK
+// ============================================================
+document.addEventListener("click", function(e){
+  if(!e.target.closest(".sdd") && !e.target.closest(".mbg")) cAllDD();
+});
+
+// ============================================================
+// INIT - Load data on startup
+// ============================================================
+window.addEventListener("load", function(){
+  // Start with empty - will load from Stock IN sheet
+  LOCS = [];
+  buildLocDD("");
+  buildInSKU("");
+  buildOutSKU("");
+  // Sync from sheets - loads products + locations
+  syncAll();
+});
+</script>
+</body>
+</html>
